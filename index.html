@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning Ménage · Dinah, Ines & Mame</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Quicksand:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FDF4F7;
+    --card:#FFFFFF;
+    --ink:#47284A;
+    --ink-soft:#8A6B8D;
+    --line:#F3DDE7;
+    --dinah:#E8739E;   --dinah-soft:#FCE4EE;
+    --ines:#9B7EDE;    --ines-soft:#EFE8FB;
+    --mame:#F09A5C;    --mame-soft:#FCEEDF;
+    --ok:#5FBF8F;      --ok-soft:#E2F5EB;
+    --no:#E2698A;      --no-soft:#FBE3EA;
+    --radius:22px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Quicksand',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  .wrap{max-width:660px;margin:0 auto;padding:0 18px}
+
+  header{text-align:center;padding:34px 0 8px}
+  header h1{
+    font-family:'Young Serif',serif;font-weight:400;
+    font-size:clamp(2.3rem,8vw,3.1rem);letter-spacing:-.01em;
+  }
+  header h1 .spark{color:var(--dinah)}
+  header p{color:var(--ink-soft);font-weight:600;margin-top:6px;font-size:.95rem}
+
+  /* ---------- Carte semaine en cours ---------- */
+  .hero{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:26px 22px 24px;
+    margin-top:20px;
+    box-shadow:0 10px 30px rgba(163,90,130,.10);
+    border:1px solid var(--line);
+    text-align:center;
+  }
+  .hero .eyebrow{
+    display:inline-block;background:var(--bg);color:var(--ink-soft);
+    font-weight:700;font-size:.72rem;letter-spacing:.12em;
+    text-transform:uppercase;padding:6px 14px;border-radius:99px;
+  }
+  .avatar{
+    width:96px;height:96px;border-radius:50%;
+    margin:18px auto 10px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Young Serif',serif;font-size:2.2rem;font-weight:400;color:#fff;
+    box-shadow:0 8px 20px rgba(0,0,0,.12);
+    transition:background .3s;
+  }
+  .avatar.empty{
+    background:var(--bg);color:var(--ink-soft);
+    font-size:2rem;box-shadow:none;border:2px dashed var(--line);
+  }
+  .hero-name{font-family:'Young Serif',serif;font-size:1.5rem;font-weight:400;min-height:1.4em}
+  .hero .dates{color:var(--ink-soft);font-weight:700;margin-top:2px;font-size:.92rem}
+
+  /* Sélecteur de la personne */
+  .picker{display:flex;justify-content:center;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .chip{
+    border:2px solid var(--line);background:var(--card);cursor:pointer;
+    font-family:'Quicksand',sans-serif;font-weight:700;font-size:.95rem;
+    color:var(--ink-soft);
+    padding:9px 20px;border-radius:99px;
+    transition:all .15s ease;
+  }
+  .chip:hover{transform:translateY(-2px)}
+  .chip.sel{color:#fff;border-color:transparent}
+  .chip.sel.Dinah{background:var(--dinah)}
+  .chip.sel.Ines{background:var(--ines)}
+  .chip.sel.Mame{background:var(--mame)}
+
+  /* Dispo + fait */
+  .hero-controls{
+    display:flex;justify-content:center;gap:10px;margin-top:18px;flex-wrap:wrap;
+  }
+  .toggle{
+    border:none;cursor:pointer;
+    font-family:'Quicksand',sans-serif;font-weight:700;font-size:.92rem;
+    padding:11px 18px;border-radius:99px;
+    background:var(--bg);color:var(--ink-soft);
+    transition:all .15s ease;
+  }
+  .toggle:hover{transform:translateY(-2px)}
+  .toggle.avail-yes{background:var(--ok-soft);color:#2E7D55;box-shadow:inset 0 0 0 2px var(--ok)}
+  .toggle.avail-no{background:var(--no-soft);color:#B23A5E;box-shadow:inset 0 0 0 2px var(--no)}
+  .toggle.done-yes{background:var(--ink);color:#fff}
+
+  /* ---------- Sections ---------- */
+  section{margin-top:36px}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:4px}
+  section h2{font-family:'Young Serif',serif;font-weight:400;font-size:1.25rem}
+  section .sub{color:var(--ink-soft);font-weight:600;font-size:.9rem;margin-bottom:14px}
+
+  /* ---------- Prochaines semaines ---------- */
+  .weeks{display:flex;flex-direction:column;gap:10px}
+  .week-row{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:12px 14px;
+    display:grid;grid-template-columns:1fr auto auto;
+    align-items:center;gap:10px;
+  }
+  .week-row .d{font-weight:700;font-size:.9rem}
+  .week-row .d small{display:block;color:var(--ink-soft);font-size:.78rem;font-weight:600}
+  select.who{
+    font-family:'Quicksand',sans-serif;font-weight:700;font-size:.9rem;
+    color:var(--ink);background:var(--bg);
+    border:2px solid var(--line);border-radius:12px;
+    padding:8px 10px;cursor:pointer;outline-color:var(--dinah);
+  }
+  .dispo-btn{
+    border:none;cursor:pointer;
+    width:42px;height:42px;border-radius:12px;
+    font-size:1.05rem;font-weight:700;
+    background:var(--bg);color:var(--ink-soft);
+    transition:all .15s ease;
+  }
+  .dispo-btn.yes{background:var(--ok-soft);color:#2E7D55;box-shadow:inset 0 0 0 2px var(--ok)}
+  .dispo-btn.no{background:var(--no-soft);color:#B23A5E;box-shadow:inset 0 0 0 2px var(--no)}
+
+  /* ---------- Historique ---------- */
+  .history{display:flex;flex-direction:column;gap:8px}
+  .hist-row{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:11px 14px;display:flex;align-items:center;gap:12px;
+  }
+  .hist-row .mini-avatar{
+    width:38px;height:38px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:.95rem;
+  }
+  .hist-row .info{flex:1}
+  .hist-row .info .n{font-weight:700;font-size:.95rem}
+  .hist-row .info .w{color:var(--ink-soft);font-size:.8rem;font-weight:600}
+  .badge{
+    font-size:.75rem;font-weight:700;padding:5px 11px;border-radius:99px;
+  }
+  .badge.done{background:var(--ok-soft);color:#2E7D55}
+  .badge.notdone{background:var(--no-soft);color:#B23A5E}
+  .badge.nodispo{background:var(--bg);color:var(--ink-soft)}
+  .empty-hist{
+    color:var(--ink-soft);font-weight:600;font-size:.9rem;
+    background:var(--card);border:1px dashed var(--line);border-radius:16px;
+    padding:18px;text-align:center;
+  }
+  .export-btn{
+    border:2px solid var(--line);background:var(--card);cursor:pointer;
+    font-family:'Quicksand',sans-serif;font-weight:700;font-size:.8rem;
+    color:var(--ink-soft);padding:7px 14px;border-radius:99px;
+    transition:all .15s;white-space:nowrap;
+  }
+  .export-btn:hover{color:var(--ink);border-color:var(--ink-soft)}
+
+  footer{text-align:center;margin-top:44px;color:var(--ink-soft);font-size:.82rem;font-weight:600}
+  footer .heart{color:var(--dinah)}
+  footer .signature{
+    display:block;margin-top:6px;
+    font-family:'Caveat',cursive;
+    font-size:1.4rem;color:var(--dinah);
+  }
+
+  @media (max-width:420px){
+    .avatar{width:80px;height:80px;font-size:2rem}
+    .week-row{grid-template-columns:1fr auto auto;gap:8px;padding:11px 11px}
+  }
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Planning ménage <span class="spark">✦</span></h1>
+    <p>Dinah · Ines · Mame, une par semaine, à votre rythme</p>
+  </header>
+
+  <!-- Semaine en cours -->
+  <div class="hero">
+    <span class="eyebrow">Cette semaine, c'est au tour de</span>
+    <div class="avatar empty" id="heroAvatar">?</div>
+    <div class="hero-name" id="heroName">À toi de choisir 👇</div>
+    <div class="dates" id="heroDates"></div>
+
+    <div class="picker" id="picker"></div>
+
+    <div class="hero-controls">
+      <button class="toggle" id="availBtn">Dispo cette semaine ?</button>
+      <button class="toggle" id="doneBtn">Ménage fait ? ✓</button>
+    </div>
+  </div>
+
+  <!-- Prochaines semaines -->
+  <section>
+    <h2>Prochaines semaines</h2>
+    <p class="sub">Choisis qui s'en occupe et si elle est dispo 🌷</p>
+    <div class="weeks" id="weeksList"></div>
+  </section>
+
+  <!-- Historique -->
+  <section>
+    <div class="sec-head">
+      <h2>Historique</h2>
+      <button class="export-btn" id="exportBtn">Télécharger (.json)</button>
+    </div>
+    <p class="sub">Toutes les semaines passées, gardées bien au chaud 📒</p>
+    <div class="history" id="historyList"></div>
+  </section>
+
+  <footer>
+    Fait avec <span class="heart">♥</span> pour la maison
+    <span class="signature">créé par Dinah ✦</span>
+  </footer>
+</div>
+
+<script>
+  // ============ Les filles ============
+  const PEOPLE = {
+    "Dinah": { color: "var(--dinah)" },
+    "Ines":  { color: "var(--ines)"  },
+    "Mame":  { color: "var(--mame)"  },
+  };
+
+  // ============ Petite base JSON (localStorage) ============
+  // Format : { "2026-07-20": { person:"Ines", available:true|false|null, done:true|false } }
+  const DB_KEY = "menage-db";
+
+  function loadDB() {
+    try { return JSON.parse(localStorage.getItem(DB_KEY)) || {}; }
+    catch { return {}; }
+  }
+  function saveDB(db) {
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+  }
+  function getWeek(db, key) {
+    if (!db[key]) db[key] = { person: null, available: null, done: false };
+    return db[key];
+  }
+
+  let db = loadDB();
+
+  // ============ Dates ============
+  function mondayOf(date) {
+    const d = new Date(date);
+    const day = (d.getDay() + 6) % 7; // lundi = 0
+    d.setDate(d.getDate() - day);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  function keyOf(monday) {
+    const y = monday.getFullYear();
+    const m = String(monday.getMonth() + 1).padStart(2, "0");
+    const d = String(monday.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  const fmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
+  function labelOf(monday) {
+    const sun = new Date(monday);
+    sun.setDate(sun.getDate() + 6);
+    return `du ${fmt.format(monday)} au ${fmt.format(sun)}`;
+  }
+
+  const thisMonday = mondayOf(new Date());
+  const thisKey = keyOf(thisMonday);
+
+  // ============ Hero : semaine en cours ============
+  const heroAvatar = document.getElementById("heroAvatar");
+  const heroName   = document.getElementById("heroName");
+  const availBtn   = document.getElementById("availBtn");
+  const doneBtn    = document.getElementById("doneBtn");
+  const picker     = document.getElementById("picker");
+  document.getElementById("heroDates").textContent = labelOf(thisMonday);
+
+  function renderHero() {
+    const w = getWeek(db, thisKey);
+
+    // Avatar + nom
+    if (w.person) {
+      heroAvatar.className = "avatar";
+      heroAvatar.style.background = PEOPLE[w.person].color;
+      heroAvatar.textContent = w.person[0];
+      heroName.textContent = w.person;
+    } else {
+      heroAvatar.className = "avatar empty";
+      heroAvatar.style.background = "";
+      heroAvatar.textContent = "?";
+      heroName.textContent = "À toi de choisir 👇";
+    }
+
+    // Chips
+    picker.innerHTML = "";
+    Object.keys(PEOPLE).forEach(name => {
+      const c = document.createElement("button");
+      c.className = "chip" + (w.person === name ? ` sel ${name}` : "");
+      c.textContent = name;
+      c.addEventListener("click", () => {
+        w.person = (w.person === name) ? null : name;
+        saveDB(db);
+        renderHero();
+      });
+      picker.appendChild(c);
+    });
+
+    // Dispo
+    availBtn.className = "toggle";
+    if (w.available === true)  { availBtn.classList.add("avail-yes"); availBtn.textContent = "Disponible ✓"; }
+    else if (w.available === false) { availBtn.classList.add("avail-no"); availBtn.textContent = "Pas dispo ✗"; }
+    else availBtn.textContent = "Dispo cette semaine ?";
+
+    // Fait
+    doneBtn.className = "toggle";
+    if (w.done) { doneBtn.classList.add("done-yes"); doneBtn.textContent = "C'est fait, bravo ! 🎉"; }
+    else doneBtn.textContent = "Ménage fait ? ✓";
+  }
+
+  availBtn.addEventListener("click", () => {
+    const w = getWeek(db, thisKey);
+    // Cycle : ? → oui → non → ?
+    w.available = (w.available === null) ? true : (w.available === true ? false : null);
+    saveDB(db);
+    renderHero();
+  });
+
+  doneBtn.addEventListener("click", () => {
+    const w = getWeek(db, thisKey);
+    w.done = !w.done;
+    saveDB(db);
+    renderHero();
+  });
+
+  renderHero();
+
+  // ============ Prochaines semaines ============
+  const weeksList = document.getElementById("weeksList");
+
+  for (let i = 1; i <= 4; i++) {
+    const m = new Date(thisMonday);
+    m.setDate(m.getDate() + i * 7);
+    const k = keyOf(m);
+    const w = getWeek(db, k);
+
+    const row = document.createElement("div");
+    row.className = "week-row";
+
+    // Dates
+    const d = document.createElement("div");
+    d.className = "d";
+    d.innerHTML = `Semaine ${i === 1 ? "prochaine" : "+" + i}<small>${labelOf(m)}</small>`;
+    row.appendChild(d);
+
+    // Liste déroulante
+    const sel = document.createElement("select");
+    sel.className = "who";
+    sel.innerHTML = `<option value="">Qui ?</option>` +
+      Object.keys(PEOPLE).map(n =>
+        `<option value="${n}" ${w.person === n ? "selected" : ""}>${n}</option>`
+      ).join("");
+    sel.addEventListener("change", () => {
+      w.person = sel.value || null;
+      saveDB(db);
+    });
+    row.appendChild(sel);
+
+    // Dispo (cycle ? → ✓ → ✗)
+    const dispo = document.createElement("button");
+    function paintDispo() {
+      dispo.className = "dispo-btn" + (w.available === true ? " yes" : w.available === false ? " no" : "");
+      dispo.textContent = w.available === true ? "✓" : w.available === false ? "✗" : "?";
+      dispo.title = w.available === true ? "Disponible" : w.available === false ? "Pas disponible" : "Dispo inconnue";
+    }
+    dispo.addEventListener("click", () => {
+      w.available = (w.available === null) ? true : (w.available === true ? false : null);
+      saveDB(db);
+      paintDispo();
+    });
+    paintDispo();
+    row.appendChild(dispo);
+
+    weeksList.appendChild(row);
+  }
+
+  // ============ Historique ============
+  const historyList = document.getElementById("historyList");
+
+  function renderHistory() {
+    historyList.innerHTML = "";
+    const past = Object.keys(db)
+      .filter(k => k < thisKey && db[k].person) // semaines passées avec une personne
+      .sort()
+      .reverse();
+
+    if (past.length === 0) {
+      historyList.innerHTML = `<div class="empty-hist">Rien pour l'instant, l'histoire commence cette semaine ! ✨</div>`;
+      return;
+    }
+
+    past.forEach(k => {
+      const w = db[k];
+      const [y, mo, da] = k.split("-").map(Number);
+      const monday = new Date(y, mo - 1, da);
+
+      const row = document.createElement("div");
+      row.className = "hist-row";
+      row.innerHTML = `
+        <div class="mini-avatar" style="background:${PEOPLE[w.person]?.color || 'var(--ink-soft)'}">${w.person[0]}</div>
+        <div class="info">
+          <div class="n">${w.person}</div>
+          <div class="w">Semaine ${labelOf(monday)}</div>
+        </div>
+        ${w.available === false ? `<span class="badge nodispo">pas dispo</span>` : ""}
+        <span class="badge ${w.done ? "done" : "notdone"}">${w.done ? "fait ✓" : "pas fait"}</span>
+      `;
+      historyList.appendChild(row);
+    });
+  }
+  renderHistory();
+
+  // ============ Export JSON ============
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "historique-menage.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+</script>
+</body>
+</html>
