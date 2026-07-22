@@ -225,7 +225,25 @@
   </footer>
 </div>
 
-<script>
+<script type="module">
+  // ============ Firebase (base partagée entre toutes) ============
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBxZctc3kS5eANF8MqxqKw4jH_UjOdC6ns",
+    authDomain: "menage-saigon.firebaseapp.com",
+    databaseURL: "https://menage-saigon-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "menage-saigon",
+    storageBucket: "menage-saigon.firebasestorage.app",
+    messagingSenderId: "632743960996",
+    appId: "1:632743960996:web:4f48a58a82b253e5f46131"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const rtdb = getDatabase(app);
+  const rootRef = ref(rtdb, "menage");
+
   // ============ Les filles ============
   const PEOPLE = {
     "Dinah": { color: "var(--dinah)" },
@@ -233,23 +251,23 @@
     "Mame":  { color: "var(--mame)"  },
   };
 
-  // ============ Petite base JSON (localStorage) ============
+  // ============ Base JSON partagée ============
   // Format : { "2026-07-20": { person:"Ines", available:true|false|null, done:true|false } }
-  const DB_KEY = "menage-db";
+  let db = {};
 
-  function loadDB() {
-    try { return JSON.parse(localStorage.getItem(DB_KEY)) || {}; }
-    catch { return {}; }
-  }
-  function saveDB(db) {
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-  }
-  function getWeek(db, key) {
-    if (!db[key]) db[key] = { person: null, available: null, done: false };
-    return db[key];
+  function getWeek(key) {
+    const w = db[key] || {};
+    w.person = w.person ?? null;
+    w.available = ("available" in w) ? w.available : null;
+    w.done = !!w.done;
+    db[key] = w;
+    return w;
   }
 
-  let db = loadDB();
+  function saveWeek(key) {
+    // Envoie la semaine dans Firebase : tout le monde la voit instantanément
+    set(ref(rtdb, "menage/" + key), db[key]);
+  }
 
   // ============ Dates ============
   function mondayOf(date) {
@@ -284,7 +302,7 @@
   document.getElementById("heroDates").textContent = labelOf(thisMonday);
 
   function renderHero() {
-    const w = getWeek(db, thisKey);
+    const w = getWeek(thisKey);
 
     // Avatar + nom
     if (w.person) {
@@ -307,7 +325,7 @@
       c.textContent = name;
       c.addEventListener("click", () => {
         w.person = (w.person === name) ? null : name;
-        saveDB(db);
+        saveWeek(thisKey);
         renderHero();
       });
       picker.appendChild(c);
@@ -326,69 +344,70 @@
   }
 
   availBtn.addEventListener("click", () => {
-    const w = getWeek(db, thisKey);
+    const w = getWeek(thisKey);
     // Cycle : ? → oui → non → ?
     w.available = (w.available === null) ? true : (w.available === true ? false : null);
-    saveDB(db);
+    saveWeek(thisKey);
     renderHero();
   });
 
   doneBtn.addEventListener("click", () => {
-    const w = getWeek(db, thisKey);
+    const w = getWeek(thisKey);
     w.done = !w.done;
-    saveDB(db);
+    saveWeek(thisKey);
     renderHero();
   });
-
-  renderHero();
 
   // ============ Prochaines semaines ============
   const weeksList = document.getElementById("weeksList");
 
-  for (let i = 1; i <= 4; i++) {
-    const m = new Date(thisMonday);
-    m.setDate(m.getDate() + i * 7);
-    const k = keyOf(m);
-    const w = getWeek(db, k);
+  function renderWeeks() {
+    weeksList.innerHTML = "";
+    for (let i = 1; i <= 4; i++) {
+      const m = new Date(thisMonday);
+      m.setDate(m.getDate() + i * 7);
+      const k = keyOf(m);
+      const w = getWeek(k);
 
-    const row = document.createElement("div");
-    row.className = "week-row";
+      const row = document.createElement("div");
+      row.className = "week-row";
 
-    // Dates
-    const d = document.createElement("div");
-    d.className = "d";
-    d.innerHTML = `Semaine ${i === 1 ? "prochaine" : "+" + i}<small>${labelOf(m)}</small>`;
-    row.appendChild(d);
+      // Dates
+      const d = document.createElement("div");
+      d.className = "d";
+      d.innerHTML = `Semaine ${i === 1 ? "prochaine" : "+" + i}<small>${labelOf(m)}</small>`;
+      row.appendChild(d);
 
-    // Liste déroulante
-    const sel = document.createElement("select");
-    sel.className = "who";
-    sel.innerHTML = `<option value="">Qui ?</option>` +
-      Object.keys(PEOPLE).map(n =>
-        `<option value="${n}" ${w.person === n ? "selected" : ""}>${n}</option>`
-      ).join("");
-    sel.addEventListener("change", () => {
-      w.person = sel.value || null;
-      saveDB(db);
-    });
-    row.appendChild(sel);
+      // Liste déroulante
+      const sel = document.createElement("select");
+      sel.className = "who";
+      sel.innerHTML = `<option value="">Qui ?</option>` +
+        Object.keys(PEOPLE).map(n =>
+          `<option value="${n}" ${w.person === n ? "selected" : ""}>${n}</option>`
+        ).join("");
+      sel.addEventListener("change", () => {
+        w.person = sel.value || null;
+        saveWeek(k);
+      });
+      row.appendChild(sel);
 
-    // Dispo (cycle ? → ✓ → ✗)
-    const dispo = document.createElement("button");
-    function paintDispo() {
-      dispo.className = "dispo-btn" + (w.available === true ? " yes" : w.available === false ? " no" : "");
-      dispo.textContent = w.available === true ? "✓" : w.available === false ? "✗" : "?";
-      dispo.title = w.available === true ? "Disponible" : w.available === false ? "Pas disponible" : "Dispo inconnue";
-    }
-    dispo.addEventListener("click", () => {
-      w.available = (w.available === null) ? true : (w.available === true ? false : null);
-      saveDB(db);
+      // Dispo (cycle ? → ✓ → ✗)
+      const dispo = document.createElement("button");
+      function paintDispo() {
+        dispo.className = "dispo-btn" + (w.available === true ? " yes" : w.available === false ? " no" : "");
+        dispo.textContent = w.available === true ? "✓" : w.available === false ? "✗" : "?";
+        dispo.title = w.available === true ? "Disponible" : w.available === false ? "Pas disponible" : "Dispo inconnue";
+      }
+      dispo.addEventListener("click", () => {
+        w.available = (w.available === null) ? true : (w.available === true ? false : null);
+        saveWeek(k);
+        paintDispo();
+      });
       paintDispo();
-    });
-    paintDispo();
-    row.appendChild(dispo);
+      row.appendChild(dispo);
 
-    weeksList.appendChild(row);
+      weeksList.appendChild(row);
+    }
   }
 
   // ============ Historique ============
@@ -397,7 +416,7 @@
   function renderHistory() {
     historyList.innerHTML = "";
     const past = Object.keys(db)
-      .filter(k => k < thisKey && db[k].person) // semaines passées avec une personne
+      .filter(k => k < thisKey && db[k] && db[k].person) // semaines passées avec une personne
       .sort()
       .reverse();
 
@@ -425,7 +444,20 @@
       historyList.appendChild(row);
     });
   }
-  renderHistory();
+
+  // ============ Synchronisation en temps réel ============
+  // Dès que quelqu'un modifie quelque chose, tout le monde voit la mise à jour
+  function renderAll() {
+    renderHero();
+    renderWeeks();
+    renderHistory();
+  }
+
+  heroName.textContent = "Chargement... ⏳";
+  onValue(rootRef, (snapshot) => {
+    db = snapshot.val() || {};
+    renderAll();
+  });
 
   // ============ Export JSON ============
   document.getElementById("exportBtn").addEventListener("click", () => {
